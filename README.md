@@ -234,6 +234,8 @@ It can be observed that pipeline_4 performed better compared to the other pipeli
 
 The `Figure 2` shows the result obtained when evaluating pipeline_4 with the test set available on the Kaggle platform.
 
+### Figure 2: Score obtained on the Kaggle platform
+
 <table>
   <tr>
     <td><img src="score.png" alt="Figure 1"></td>
