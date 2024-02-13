@@ -133,7 +133,7 @@ In the Embarked graph, it can be observed that the majority of passengers embark
 Three pipelines, namely `Pipeline_1`, `Pipeline_2`, and `Pipeline_3`, were created and evaluated based on their performance on the training data.
 
 ### Pipeline_1:
-The Pipeline_1 was constructed by excluding the attributes Cabin, Name, Ticket, and Survived, where the latter serves as the target variable of the model. The following code snippet illustrates the pipeline creation:
+The `Pipeline_1` was constructed by excluding the attributes Cabin, Name, Ticket, and Survived, where the latter serves as the target variable of the model. The following code snippet illustrates the pipeline creation:
 
 ```python
 # Saved attribute names to be used according to their type
@@ -149,14 +149,14 @@ pipeline_1 = ColumnTransformer([("num", num_pipeline, num_attribs), ("cat", cat_
 data_train_prepared = pipeline_1.fit_transform(data_train)
 ```
 ### Pipeline_2:
-The Pipeline_2 was built by excluding all attributes except for the gender (Sex), as demonstrated in the code below:
+The `Pipeline_2` was built by excluding all attributes except for the gender (Sex), as demonstrated in the code below:
 
 ```python
 pipeline_2 = ColumnTransformer([("cat", cat_pipeline, ["Sex"]),])
 data_train_prepared_2 = pipeline_2.fit_transform(data_train)
 ```
 ### Pipeline_3:
-In the Pipeline_3, two changes were made in the attribute selection. Firstly, the PassengerId attribute was discarded due to its low correlation with the target variable Survived. Secondly, the Pclass attribute, which has only three different values, was included in the set of categorical attributes. The following code was used to implement these transformations:
+In the `Pipeline_3`, two changes were made in the attribute selection. Firstly, the PassengerId attribute was discarded due to its low correlation with the target variable Survived. Secondly, the Pclass attribute, which has only three different values, was included in the set of categorical attributes. The following code was used to implement these transformations:
 
 ```python
 num_attribs_3 = ['Age', 'SibSp', 'Parch', 'Fare']
@@ -187,4 +187,57 @@ scores_3 = cross_val_score(log_reg_3, data_train_prepared_3, y_target, cv=5)
 | Pipeline\_2   | [0.804469, 0.803371, 0.786517, 0.752809, 0.786517]              | 0.786737  | 0.018667           |
 | Pipeline\_3   | [0.787709, 0.786517, 0.786517, 0.769663, 0.831461]              | 0.792373  | 0.020659           |
 
+From `Table 4`, it can be concluded that `Pipeline_3` exhibits the best performance, with an average of 0.792 and a standard deviation of 0.021.
+To improve the performance of `Pipeline_3`, a RandomForestClassifier is employed, and GridSearchCV is used to find the best parameters.
 
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+
+# Parameters to be evaluated
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_features': ['sqrt', 'log2'],
+    'max_depth': [10, 20, 30, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+# Grid search with cross-validation
+rfc = RandomForestClassifier()
+grid_search = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+
+# Train and fit the model
+grid_search.fit(data_train_prepared_3, y_target)
+```
+Using the best parameters, a new `Pipeline_4` is created, and its performance is added to `Table 4`, resulting in `Table 5`.
+
+```python
+classifier = RandomForestClassifier(max_depth=None, max_features='log2', 
+min_samples_leaf=2, min_samples_split=2, n_estimators=50)
+pipeline_4 = make_pipeline(pipeline_3, classifier)
+scores_4 = cross_val_score(pipeline_4, data_train, y_target, cv=5)
+```
+
+### Table 5: Comparison of cross-validation scores for the four pipelines
+
+| Pipeline     | Cross-validation scores                               | Average   | Standard Deviation |
+|--------------|-------------------------------------------------------|-----------|--------------------|
+| Pipeline\_1  | [0.782123, 0.786517, 0.780899, 0.769663, 0.814607]   | 0.786762  | 0.014991           |
+| Pipeline\_2  | [0.804469, 0.803371, 0.786517, 0.752809, 0.786517]   | 0.786737  | 0.018667           |
+| Pipeline\_3  | [0.787709, 0.786517, 0.786517, 0.769663, 0.831461]   | 0.792373  | 0.020659           |
+| Pipeline\_4  | [0.793296, 0.803371, 0.865169, 0.814607, 0.831461]   | 0.821581  | 0.025210           |
+
+It can be observed that pipeline_4 performed better compared to the other pipelines. Therefore, it will be saved as the final model and evaluated with the test data.
+
+## Final Model
+
+The `Figure 2` shows the result obtained when evaluating pipeline_4 with the test set available on the Kaggle platform.
+
+<table>
+  <tr>
+    <td><img src="score.png" alt="Figure 1"></td>
+  </tr>
+</table>
+
+It can be inferred that the model generalizes well, as the value obtained in the test set is similar to the value obtained in the training set.
