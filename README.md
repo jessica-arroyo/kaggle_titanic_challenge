@@ -88,7 +88,7 @@ The PassengerId variable does not appear to have a significant correlation with 
 
 On the other hand, the Age, Pclass, and SibSp variables are negatively correlated with the Survived variable, suggesting that older people, those traveling in lower classes, and those with more siblings/spouses aboard had a lower probability of survival.
 
-To analyze the relationship of categorical attributes with survival, the following code can be used to generate a stacked bar chart showing the number of survivors and fatalities for each category. The results are shown in Figure \ref{fig:figura_general}.
+To analyze the relationship of categorical attributes with survival, the following code can be used to generate a stacked bar chart showing the number of survivors and fatalities for each category. The results are shown in `Figure 1`.
 
 ```python
 import matplotlib.pyplot as plt
@@ -118,6 +118,73 @@ plt.legend(['Fatalities', 'Survivors'])
 
 plt.show()
 ```
-![Description of the Image](images/gender.png)
-![Description of the Image](images/embarkation.png)
+### Figure 1: Relationship between Gender, Embarkation Port and Survival
+
+<table>
+  <tr>
+    <td><img src="gender.png" alt="Figure 1"></td>
+    <td><img src="embarkation.png" alt="Figure 2"></td>
+  </tr>
+</table>
+
+In the Embarked graph, it can be observed that the majority of passengers embarked at port S, and passengers who embarked at port C have the highest survival rate, while those who embarked at port S have the lowest survival rate. In the Sex graph, it can be seen that females have a much higher survival rate than males. This suggests that both the embarkation port and gender may be important factors in determining the probability of survival.
+
+## Performance Comparison between Pipelines on Training Data
+Three pipelines, namely `Pipeline_1`, `Pipeline_2`, and `Pipeline_3`, were created and evaluated based on their performance on the training data.
+
+### Pipeline_1:
+The Pipeline_1 was constructed by excluding the attributes Cabin, Name, Ticket, and Survived, where the latter serves as the target variable of the model. The following code snippet illustrates the pipeline creation:
+
+```python
+# Saved attribute names to be used according to their type
+num_attribs = ['PassengerId', 'Age', 'SibSp', 'Parch', 'Fare','Pclass']
+cat_attribs = ['Sex', 'Embarked']
+
+# Created a pipeline for numerical attributes and another for categorical attributes
+num_pipeline = make_pipeline(SimpleImputer(strategy="median"), StandardScaler())
+cat_pipeline = make_pipeline(SimpleImputer(strategy="most_frequent"), OneHotEncoder(handle_unknown="ignore"))
+
+# Preprocessed the data, applying each pipeline to the corresponding attributes
+pipeline_1 = ColumnTransformer([("num", num_pipeline, num_attribs), ("cat", cat_pipeline, cat_attribs)])
+data_train_prepared = pipeline_1.fit_transform(data_train)
+```
+### Pipeline_2:
+The Pipeline_2 was built by excluding all attributes except for the gender (Sex), as demonstrated in the code below:
+
+```python
+pipeline_2 = ColumnTransformer([("cat", cat_pipeline, ["Sex"]),])
+data_train_prepared_2 = pipeline_2.fit_transform(data_train)
+```
+### Pipeline_3:
+In the Pipeline_3, two changes were made in the attribute selection. Firstly, the PassengerId attribute was discarded due to its low correlation with the target variable Survived. Secondly, the Pclass attribute, which has only three different values, was included in the set of categorical attributes. The following code was used to implement these transformations:
+
+```python
+num_attribs_3 = ['Age', 'SibSp', 'Parch', 'Fare']
+cat_attribs_3 = ['Pclass','Sex', 'Embarked']
+pipeline_3 = ColumnTransformer([("num", num_pipeline, num_attribs_3), ("cat", cat_pipeline, cat_attribs_3)])
+data_train_prepared_3 = pipeline_3.fit_transform(data_train)
+```
+A Logistic Regression model with default parameters was trained and evaluated using 5-fold cross-validation. The performance results are displayed in `Table 4`.
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
+log_reg = LogisticRegression().fit(data_train_prepared, y_target)
+log_reg_2 = LogisticRegression().fit(data_train_prepared_2, y_target)
+log_reg_3 = LogisticRegression().fit(data_train_prepared_3, y_target)
+
+scores = cross_val_score(log_reg, data_train_prepared, y_target, cv=5)
+scores_2 = cross_val_score(log_reg_2, data_train_prepared_2, y_target, cv=5)
+scores_3 = cross_val_score(log_reg_3, data_train_prepared_3, y_target, cv=5)
+```
+
+### Table 4: Comparison of cross-validation scores for the three pipelines
+
+| Pipeline      | Cross-validation scores                                          | Average   | Standard Deviation |
+|---------------|------------------------------------------------------------------|-----------|--------------------|
+| Pipeline\_1   | [0.782123, 0.786517, 0.780899, 0.769663, 0.814607]              | 0.786762  | 0.014991           |
+| Pipeline\_2   | [0.804469, 0.803371, 0.786517, 0.752809, 0.786517]              | 0.786737  | 0.018667           |
+| Pipeline\_3   | [0.787709, 0.786517, 0.786517, 0.769663, 0.831461]              | 0.792373  | 0.020659           |
+
 
